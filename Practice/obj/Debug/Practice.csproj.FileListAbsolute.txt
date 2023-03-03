@@ -5,3 +5,10 @@ C:\Users\임시\source\repos\Practice\Practice\obj\Debug\Practice.csproj.Assembl
 C:\Users\임시\source\repos\Practice\Practice\obj\Debug\Practice.csproj.CoreCompileInputs.cache
 C:\Users\임시\source\repos\Practice\Practice\obj\Debug\Practice.exe
 C:\Users\임시\source\repos\Practice\Practice\obj\Debug\Practice.pdb
+C:\Users\임시\Documents\GitHub\RedBlackTree\Practice\bin\Debug\Practice.exe.config
+C:\Users\임시\Documents\GitHub\RedBlackTree\Practice\bin\Debug\Practice.exe
+C:\Users\임시\Documents\GitHub\RedBlackTree\Practice\bin\Debug\Practice.pdb
+C:\Users\임시\Documents\GitHub\RedBlackTree\Practice\obj\Debug\Practice.csproj.AssemblyReference.cache
+C:\Users\임시\Documents\GitHub\RedBlackTree\Practice\obj\Debug\Practice.csproj.CoreCompileInputs.cache
+C:\Users\임시\Documents\GitHub\RedBlackTree\Practice\obj\Debug\Practice.exe
+C:\Users\임시\Documents\GitHub\RedBlackTree\Practice\obj\Debug\Practice.pdb
