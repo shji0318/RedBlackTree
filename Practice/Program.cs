@@ -10,14 +10,14 @@ public class Program
     public static void Main()
     {
         RedBlackTree<int> tree = new RedBlackTree<int>();
-        tree.Push(new Node<int>(10));
-        tree.Push(new Node<int>(20));
-        tree.Push(new Node<int>(50));
-        tree.Push(new Node<int>(30));
-        tree.Push(new Node<int>(80));
-        tree.Push(new Node<int>(40));
-        tree.Push(new Node<int>(35));
-        tree.Push(new Node<int>(25));
+        tree.Insert(10);
+        tree.Insert(20);
+        tree.Insert(50);
+        tree.Insert(30);
+        tree.Insert(80);
+        tree.Insert(40);
+        tree.Insert(35);
+        tree.Insert(25);
         tree.WriteTree();
 
     }
@@ -58,8 +58,9 @@ public class RedBlackTree<T> where T : IComparable
         _dic.Add(-1, new Node<T>(default(T)));
     }
 
-    public void Push(Node<T> node)
+    public void Insert(T data)
     {
+        Node<T> node = new Node<T>(data);
         if(_count == 0)
         {
             _root = _count;
@@ -133,13 +134,85 @@ public class RedBlackTree<T> where T : IComparable
                 RotateLeftRight(now,parent,grand);   
                 // 변경 후 중앙 노드로 현재 노드가 올라오기 때문에 now 위치에서 다시 검사
             }
-            else // right, left
+            else if (_dic[grand]._right == parent && _dic[parent]._left == now)// right, left
             {
                 RotateRightLeft(now,parent,grand);
                 // 변경 후 중앙 노드로 현재 노드가 올라오기 때문에 now 위치에서 다시 검사
             }
 
         }
+    }
+
+    public void Remove(T data)
+    {
+        Node<T> node = _dic[_root];
+        while (true)
+        {
+
+            if (node._data.CompareTo(data) < 0)
+            {
+                if (node._right == -1)
+                    break;
+                node = _dic[node._right];
+            }
+            else if (node._data.CompareTo(data) > 0)
+            {
+                if (node._left == -1)
+                    break;
+
+                node = _dic[node._left];
+            }
+            else
+                break;
+        }
+
+        if(node._data.CompareTo(data) !=0)
+        {
+            Console.WriteLine("해당 값은 현재 Tree에 존재하지 않습니다.");
+            return;
+        }
+
+        if(node._left != -1 && node._right != -1)
+        {
+            Node<T> suc = FindSuccessor(node);
+
+            node._data = suc._data;
+            _dic.Remove(suc._num);
+
+            if (suc._color == NodeColor.Black)
+            {
+                if (node._parent == -1)
+                    return;
+
+                Node<T> parent = _dic[node._parent];
+                Node<T> uncle = parent._left == node._num ? _dic[parent._right] : _dic[parent._left];
+                FixedRemove(node);
+            }
+                
+        }
+        else
+        {
+            int child = -1;
+
+            child = node._left != -1 ? node._left:node._right;
+
+            if (_dic[node._parent]._left == node._num)
+                _dic[node._parent]._left = child;
+            else
+                _dic[node._parent]._right = child;
+
+            if(node._color == NodeColor.Black)
+            {
+
+                FixedRemove(_dic[child]);
+            }
+            else
+                _dic.Remove(node._num);
+            
+        }
+        
+
+        
     }
 
     public void WriteTree()
@@ -171,12 +244,8 @@ public class RedBlackTree<T> where T : IComparable
             for (int i = 0; i < nextCount; i++)
             {                
                 q.Enqueue(next.Dequeue());
-            }
-
-            
+            }            
         }
-        
-
     }
 
     public void CColor (NodeColor nc, string s)
@@ -229,13 +298,10 @@ public class RedBlackTree<T> where T : IComparable
         if (grand == _root)
             _root = parent;
 
-        if (parent != _root)
-            _dic[parent]._color = NodeColor.Red;
-        else
-            _dic[parent]._color = NodeColor.Black;
-
-        _dic[grand]._color = NodeColor.Black;
-        _dic[now]._color = NodeColor.Black;
+        
+        _dic[parent]._color = NodeColor.Black;
+        _dic[grand]._color = NodeColor.Red;
+        _dic[now]._color = NodeColor.Red;
     }
 
     public void RotateLeft(int now, int parent, int grand)
@@ -265,25 +331,11 @@ public class RedBlackTree<T> where T : IComparable
         if (grand == _root)
             _root = parent;
 
-        if (parent != _root)
-            _dic[parent]._color = NodeColor.Red;
-        else
-            _dic[parent]._color = NodeColor.Black;
-
-        _dic[grand]._color = NodeColor.Black;
-        _dic[now]._color = NodeColor.Black;
-    }    
-
-    public void RotateRightLeft(int now, int parent, int grand)
-    {
-        _dic[parent]._left = _dic[now]._right;
-        _dic[parent]._parent = now;
-        _dic[now]._right = parent;
-        _dic[now]._parent = parent;
-        _dic[grand]._right = now;
-        RotateLeft(parent, now , grand);
+        
+        _dic[parent]._color = NodeColor.Black;
+        _dic[grand]._color = NodeColor.Red;
+        _dic[now]._color = NodeColor.Red;
     }
-
     public void RotateLeftRight(int now, int parent, int grand)
     {
         _dic[parent]._right = _dic[now]._left;
@@ -293,5 +345,33 @@ public class RedBlackTree<T> where T : IComparable
         _dic[grand]._left = now;
         RotateRight(parent,now,grand);
     }
+    public void RotateRightLeft(int now, int parent, int grand)
+    {
+        _dic[parent]._left = _dic[now]._right;
+        _dic[parent]._parent = now;
+        _dic[now]._right = parent;
+        _dic[now]._parent = parent;
+        _dic[grand]._right = now;
+        RotateLeft(parent, now, grand);
+    }
 
+    public Node<T> FindSuccessor(Node<T> node)
+    {
+        Node<T> now = _dic[node._right];
+        while(now._left != -1)
+        {
+            now = _dic[now._left];
+        }
+
+        return now;
+    }
+
+    public void FixedRemove(Node<T> node , Node<T> uncle, Node<T> parent)
+    {
+        if(node._color == NodeColor.Red)
+        {
+            node._color = NodeColor.Black;
+            return;
+        }
+    }
 }
