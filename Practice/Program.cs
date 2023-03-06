@@ -18,6 +18,22 @@ public class Program
         tree.Insert(40);
         tree.Insert(35);
         tree.Insert(25);
+        tree.Insert(33);
+        tree.Insert(5);
+        tree.Insert(15);
+        tree.Insert(37);
+        tree.Insert(45);
+        tree.Insert(2);
+        tree.Insert(27);
+
+        tree.Remove(15);
+        tree.Remove(33);
+        tree.Remove(37);
+        tree.Remove(35);
+        tree.Remove(40);
+        tree.Remove(50);
+        tree.Remove(80);
+        tree.Remove(27);
         tree.WriteTree();
 
     }
@@ -60,6 +76,8 @@ public class RedBlackTree<T> where T : IComparable
 
     public void Insert(T data)
     {
+        _dic[-1]._parent = -1;
+        _dic[-1]._color = NodeColor.Black;
         Node<T> node = new Node<T>(data);
         if(_count == 0)
         {
@@ -119,24 +137,36 @@ public class RedBlackTree<T> where T : IComparable
 
             if(_dic[grand]._left == parent && _dic[parent]._left == now)//left , left
             {
-                RotateRight(now,parent,grand);
+                RightRotate(now,parent,grand);
+                _dic[parent]._color = NodeColor.Black;
+                _dic[grand]._color = NodeColor.Red;
+                _dic[now]._color = NodeColor.Red;
                 now = parent; //변경 후 parent 노드 위치에서 다시 Double Red 검사
                 continue;
             }
             else if(_dic[grand]._right == parent && _dic[parent]._right == now) //right, right
             {
-                RotateLeft(now, parent, grand);
+                LeftRotate(now, parent, grand);
+                _dic[parent]._color = NodeColor.Black;
+                _dic[grand]._color = NodeColor.Red;
+                _dic[now]._color = NodeColor.Red;
                 now = parent; //변경 후 parent 노드 위치에서 다시 Double Red 검사
                 continue;
             }
             else if(_dic[grand]._left == parent && _dic[parent]._right == now) // left, right
             {
-                RotateLeftRight(now,parent,grand);   
+                LeftRightRotate(now,parent,grand);
+                _dic[now]._color = NodeColor.Black;
+                _dic[grand]._color = NodeColor.Red;
+                _dic[parent]._color = NodeColor.Red;
                 // 변경 후 중앙 노드로 현재 노드가 올라오기 때문에 now 위치에서 다시 검사
             }
             else if (_dic[grand]._right == parent && _dic[parent]._left == now)// right, left
             {
-                RotateRightLeft(now,parent,grand);
+                RightLeftRotate(now,parent,grand);
+                _dic[now]._color = NodeColor.Black;
+                _dic[grand]._color = NodeColor.Red;
+                _dic[parent]._color = NodeColor.Red;
                 // 변경 후 중앙 노드로 현재 노드가 올라오기 때문에 now 위치에서 다시 검사
             }
 
@@ -145,10 +175,13 @@ public class RedBlackTree<T> where T : IComparable
 
     public void Remove(T data)
     {
+        _dic[-1]._parent = -1;
+        _dic[-1]._color = NodeColor.Black;
         Node<T> node = _dic[_root];
+
+        #region 해당 노드 찾기
         while (true)
         {
-
             if (node._data.CompareTo(data) < 0)
             {
                 if (node._right == -1)
@@ -166,31 +199,36 @@ public class RedBlackTree<T> where T : IComparable
                 break;
         }
 
-        if(node._data.CompareTo(data) !=0)
+        if (node._data.CompareTo(data) != 0)
         {
             Console.WriteLine("해당 값은 현재 Tree에 존재하지 않습니다.");
             return;
         }
+        #endregion
 
-        if(node._left != -1 && node._right != -1)
+        // 자식이 둘 다 존재할 경우 => 제거되는 노드의 색은 Successor의 노드 색을 따라감
+        if (node._left != -1 && node._right != -1)
         {
+            //Successor 찾기 => 오른쪽 자식의 왼쪽 끝 leaf 노드
             Node<T> suc = FindSuccessor(node);
 
             node._data = suc._data;
+
+            _dic[suc._parent]._left = suc._right;
+            _dic[suc._right]._parent = suc._parent;
+            
             _dic.Remove(suc._num);
 
-            if (suc._color == NodeColor.Black)
-            {
-                if (node._parent == -1)
-                    return;
+            //삭제되는 노드의 색이 Red 일 경우 기존 RB Tree의 규칙을 위반하지 않음
+            if (suc._color == NodeColor.Red)
+                return;            
 
-                Node<T> parent = _dic[node._parent];
-                Node<T> uncle = parent._left == node._num ? _dic[parent._right] : _dic[parent._left];
-                FixedRemove(node);
-            }
-                
+            //위에 조건문에 해당하지 않았다면 삭제 알고리즘의 해당하는 Case를 찾기 위해 자신, 부모와 형제 노드를 비교
+            Node<T> parent = _dic[suc._parent];
+            
+            FixedRemove(_dic[suc._right], parent);
         }
-        else
+        else // 자식이 1개 or 0개
         {
             int child = -1;
 
@@ -201,13 +239,17 @@ public class RedBlackTree<T> where T : IComparable
             else
                 _dic[node._parent]._right = child;
 
-            if(node._color == NodeColor.Black)
-            {
+            if(child != -1)
+                _dic[child]._parent = node._parent;
 
-                FixedRemove(_dic[child]);
-            }
-            else
-                _dic.Remove(node._num);
+            _dic.Remove(node._num);            
+
+            if (node._color == NodeColor.Red)
+                return;
+
+            Node<T> parent = _dic[node._parent];        
+
+            FixedRemove(_dic[child],parent);
             
         }
         
@@ -217,6 +259,8 @@ public class RedBlackTree<T> where T : IComparable
 
     public void WriteTree()
     {
+        _dic[-1]._parent = -1;
+        _dic[-1]._color = NodeColor.Black;
         Queue<Node<T>> q = new Queue<Node<T>>();
         Queue<Node<T>> next = new Queue<Node<T>>();
         q.Enqueue(_dic[_root]);
@@ -271,14 +315,14 @@ public class RedBlackTree<T> where T : IComparable
             _dic[grand]._color = NodeColor.Black;
     }
 
-    public void RotateRight(int now, int parent, int grand)
+    public void RightRotate(int now, int parent, int grand)
     {
         int grandParent = _dic[grand]._parent;
 
         #region 중간 값을 갖는 노드 : parent 노드를 중앙으로 이동        
-        _dic[grand]._left = _dic[parent]._right; // 오른쪽 자식을 grand 노드로 변경해야하기 때문에 중앙으로 올라갈 parent 노드의 오른쪽 자식이 존재한다면
-                                                 // 기존 parent의 right는 grand노드의 왼쪽 자식으로 옮긴다 
-                                                 // 왼쪽 자녀 노드의 오른쪽 자녀 또한 자신보다 작은 값을 갖기 때문에 왼쪽 자식으로 붙여도 상관 없음
+        _dic[grand]._left = _dic[parent]._right;    // 오른쪽 자식을 grand 노드로 변경해야하기 때문에 중앙으로 올라갈 parent 노드의 오른쪽 자식이 존재한다면
+        _dic[_dic[parent]._right]._parent = grand;  // 기존 parent의 right는 grand노드의 왼쪽 자식으로 옮긴다 
+                                                    // 왼쪽 자녀 노드의 오른쪽 자녀 또한 자신보다 작은 값을 갖기 때문에 왼쪽 자식으로 붙여도 상관 없음
 
 
         //중앙 노드가 되는 parent 노드의 right는 grand 로 변경
@@ -287,6 +331,7 @@ public class RedBlackTree<T> where T : IComparable
         //중앙 노드가 되는 parent 노드의 left 는 now 로 변경
         _dic[parent]._left = now;
         _dic[now]._parent = parent;
+
         _dic[parent]._parent = grandParent;        
 
         if (_dic[grandParent]._left == grand)
@@ -296,22 +341,21 @@ public class RedBlackTree<T> where T : IComparable
         #endregion
 
         if (grand == _root)
+        {
             _root = parent;
+            _dic[parent]._color = NodeColor.Black;
+        }
 
-        
-        _dic[parent]._color = NodeColor.Black;
-        _dic[grand]._color = NodeColor.Red;
-        _dic[now]._color = NodeColor.Red;
     }
 
-    public void RotateLeft(int now, int parent, int grand)
+    public void LeftRotate(int now, int parent, int grand)
     {
         int grandParent = _dic[grand]._parent;
 
         #region 중간 값을 갖는 노드 : parent 노드를 중앙으로 이동                     
-        _dic[grand]._right = _dic[parent]._left;  // 왼쪽 자식을 grand 노드로 변경해야하기 때문에 중앙으로 올라갈 parent 노드의 왼쪽 자식이 존재한다면
-                                                  // 기존 parent의 left는 grand노드의 오른쪽 자식으로 옮긴다 
-                                                  // 오른쪽 자녀 노드의 왼쪽 자녀 또한 자신보다 큰 값을 갖기 때문에 오른쪽 자식으로 붙여도 상관 없음
+        _dic[grand]._right = _dic[parent]._left;   // 왼쪽 자식을 grand 노드로 변경해야하기 때문에 중앙으로 올라갈 parent 노드의 왼쪽 자식이 존재한다면
+        _dic[_dic[parent]._left]._parent = grand;  // 기존 parent의 left는 grand노드의 오른쪽 자식으로 옮긴다 
+                                                   // 오른쪽 자녀 노드의 왼쪽 자녀 또한 자신보다 큰 값을 갖기 때문에 오른쪽 자식으로 붙여도 상관 없음
 
         //중앙 노드가 되는 parent 노드의 left는 grand 로 변경
         _dic[parent]._left = grand;
@@ -329,30 +373,35 @@ public class RedBlackTree<T> where T : IComparable
         #endregion
 
         if (grand == _root)
+        {
             _root = parent;
-
+            _dic[parent]._color = NodeColor.Black;
+        }
+            
         
-        _dic[parent]._color = NodeColor.Black;
-        _dic[grand]._color = NodeColor.Red;
-        _dic[now]._color = NodeColor.Red;
+        
     }
-    public void RotateLeftRight(int now, int parent, int grand)
+    public void LeftRightRotate(int now, int parent, int grand)
     {
+        //기존 Rotate 전 현재 노드와 부모 노드를 왼쪽으로 먼저 Rotate 해서 위에 상황과 동일하게 만든 후, 현재, 부모, 조부모를 기준으로 오른쪽 Rotate
         _dic[parent]._right = _dic[now]._left;
+        _dic[_dic[now]._left]._parent = parent;
         _dic[parent]._parent = now;
         _dic[now]._left = parent;
         _dic[now]._parent = grand;
         _dic[grand]._left = now;
-        RotateRight(parent,now,grand);
+        RightRotate(parent,now,grand);
     }
-    public void RotateRightLeft(int now, int parent, int grand)
+    public void RightLeftRotate(int now, int parent, int grand)
     {
+        //기존 Rotate 전 현재 노드와 부모 노드를 오른쪽으로 먼저 Rotate 해서 위에 상황과 동일하게 만든 후, 현재, 부모, 조부모를 기준으로 왼쪽 Rotate
         _dic[parent]._left = _dic[now]._right;
+        _dic[_dic[now]._right]._parent = parent;
         _dic[parent]._parent = now;
         _dic[now]._right = parent;
-        _dic[now]._parent = parent;
+        _dic[now]._parent = grand;
         _dic[grand]._right = now;
-        RotateLeft(parent, now, grand);
+        LeftRotate(parent, now, grand);
     }
 
     public Node<T> FindSuccessor(Node<T> node)
@@ -366,12 +415,136 @@ public class RedBlackTree<T> where T : IComparable
         return now;
     }
 
-    public void FixedRemove(Node<T> node , Node<T> uncle, Node<T> parent)
+    public void FixedRemove(Node<T> node , Node<T> parent)
     {
-        if(node._color == NodeColor.Red)
+        _dic[-1]._parent = -1;
+        _dic[-1]._color = NodeColor.Black;
+        // 대체된 노드가 Red라면 Red And Black => Black 으로 변경 후 종료
+        if (node._color == NodeColor.Red)
         {
             node._color = NodeColor.Black;
             return;
         }
+
+        if(_root == node._num)
+        {
+            node._color = NodeColor.Black;
+            return;
+        }
+
+        Node<T> brother;
+
+        if (parent._left == node._num || parent._left == -1)
+            brother = _dic[parent._right];
+        else
+            brother = _dic[parent._left];
+
+        switch (brother._color)
+        {
+            case NodeColor.Black:
+                {
+                    if(parent._left == brother._num)
+                    {
+                        if(_dic[brother._left]._color == NodeColor.Red)
+                        {
+                            Node<T> child = _dic[brother._left];
+                            RemoveRightRotate(brother, parent, child);
+                        }
+                        else if (_dic[brother._left]._color == NodeColor.Black && _dic[brother._right]._color == NodeColor.Red)
+                        {
+                            Node<T> child = _dic[brother._right];
+                            RemoveLeftRightRotate(brother, parent, child);
+                        }
+                        else
+                        {
+                            brother._color = NodeColor.Red;
+
+                            if (parent._color == NodeColor.Red)
+                                parent._color = NodeColor.Black;
+                            else
+                                FixedRemove(parent, _dic[parent._parent]);
+                        }
+                    }
+                    else
+                    {
+                        if (_dic[brother._right]._color == NodeColor.Red)
+                        {
+                            Node<T> child = _dic[brother._right];
+                            RemoveLeftRotate(brother, parent, child);
+                        }
+                        else if (_dic[brother._right]._color == NodeColor.Black && _dic[brother._left]._color == NodeColor.Red)
+                        {
+                            Node<T> child = _dic[brother._left];
+                            RemoveRightLeftRotate(brother, parent, child);
+                        }
+                        else
+                        {
+                            brother._color = NodeColor.Red;
+
+                            if (parent._color == NodeColor.Red)
+                                parent._color = NodeColor.Black;
+                            else
+                                FixedRemove(parent, _dic[parent._parent]);
+                        }
+                    }
+                }
+                break;
+            case NodeColor.Red:
+                {
+                    parent._color = brother._color;
+                    brother._color = NodeColor.Black;
+
+                    if(parent._left == brother._num)
+                    {
+                        RightRotate(brother._left, brother._num, parent._num);
+                        FixedRemove(node, parent);
+                    }
+                    else
+                    {
+                        LeftRotate(brother._right,brother._num,parent._num);
+                        FixedRemove(node, parent);
+                    }
+                }
+                break;
+        }
     }
+
+    public void RemoveRightRotate(Node<T> brother, Node<T> parent, Node<T> child)
+    {
+        brother._color = parent._color;
+        parent._color = NodeColor.Black;
+        child._color = NodeColor.Black;
+        RightRotate(child._num, brother._num, parent._num);
+    }
+
+    public void RemoveLeftRotate(Node<T> brother, Node<T> parent, Node<T> child)
+    {
+        brother._color = parent._color;
+        parent._color = NodeColor.Black;
+        child._color = NodeColor.Black;
+        LeftRotate(child._num, brother._num, parent._num);
+    }
+
+    public void RemoveLeftRightRotate(Node<T> brother, Node<T> parent, Node<T> child)
+    {
+        brother._color = child._color;
+        child._color = NodeColor.Black;
+
+        child._color = parent._color;
+        parent._color = NodeColor.Black;
+        brother._color = NodeColor.Black;
+        LeftRightRotate(child._num, brother._num, parent._num);
+    }
+
+    public void RemoveRightLeftRotate(Node<T> brother, Node<T> parent, Node<T> child)
+    {
+        brother._color = child._color;
+        child._color = NodeColor.Black;
+
+        child._color = parent._color;
+        parent._color = NodeColor.Black;
+        brother._color = NodeColor.Black;
+        RightLeftRotate(child._num, brother._num, parent._num);
+    }
+
 }
